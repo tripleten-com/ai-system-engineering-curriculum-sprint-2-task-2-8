@@ -1,0 +1,194 @@
+# Coldline - Task 2.8
+# File: .github/workflows/protected-review.yml
+# Component: Protected held-out review CI
+# Purpose: Grade the held-out scenario without exposing its expected values to students.
+# Interacts With: uv, Poe, Docker Compose, tests/contract/held_out_review.py
+# Sprint/Task: Sprint 2 - Project 2 / Task 2.8
+# Concepts: Held-out evaluation
+# Tools: GitHub Actions
+
+name: Task 2.8 protected review
+
+# pull_request_target (not pull_request): the workflow definition and the grading script below must
+# come from the base branch, not the student's PR branch, since a student PR could otherwise edit
+# tests/contract/held_out_review.py to leak the secret it runs with.
+#
+# workflow_dispatch is deliberately absent. A manual dispatch runs the DISPATCHED branch's own copy of
+# this file, so a student with push access could delete the path gate below and trigger a secret-scoped
+# run from the Actions tab. There is no legitimate manual-run use case for this grading job.
+on:
+  pull_request_target:
+
+permissions:
+  contents: read
+
+jobs:
+  held-out-review:
+    # Belt and braces for the `on:` block above. Only a genuine pull_request_target event supplies the
+    # github.event.pull_request context that the checkout ref and the path gate below depend on; under
+    # any other event those expressions silently evaluate to empty and both protections degrade to
+    # no-ops. The same-repo check keeps a fork's PR from triggering a secret-scoped run at all.
+    #
+    # The final clause skips generated export PRs, which regenerate the whole template and so can
+    # never satisfy the two-path boundary below — before it, every export PR tripped this gate and
+    # reported a permanent, meaningless failure.
+    #
+    # Note carefully that `github.head_ref` is ATTACKER-CONTROLLED: a student chooses their own
+    # branch name, and a bare `startsWith(github.head_ref, 'export/')` skip would let them dodge
+    # held-out grading just by naming a branch `export/anything`. That is why the skip additionally
+    # requires an OWNER/MEMBER author association, which a student submitting from outside the org
+    # cannot set. Residual risk: an org member could still self-skip, so this narrows the gate
+    # rather than closing it completely. Skipping produces no grade, not a passing grade, and a
+    # missing held-out result cannot satisfy the required App-bound check.
+    if: >-
+      github.event_name == 'pull_request_target'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && !(
+        startsWith(github.head_ref, 'export/')
+        && contains(fromJSON('["OWNER","MEMBER"]'), github.event.pull_request.author_association)
+      )
+    environment: coldline-protected-grading
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Create a short-lived token for the trusted result issuer
+        id: result-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349
+        with:
+          app-id: ${{ vars.COLDLINE_GRADING_APP_ID }}
+          private-key: ${{ secrets.COLDLINE_GRADING_APP_PRIVATE_KEY }}
+          permission-statuses: write
+      - name: Mark the exact PR commit pending
+        # A pull_request_target run reports its own check against the BASE commit, so it cannot be
+        # the required check on a student's head commit. This status can, and it is issued by the
+        # grading App rather than by the workflow, so a student cannot post a passing one.
+        env:
+          GH_TOKEN: ${{ steps.result-token.outputs.token }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$PR_HEAD_SHA" \
+            -f state=pending -f context="Task 2.8 held-out result" \
+            -f description="Trusted held-out runtime check is running" > /dev/null
+
+      # Task 2.8 changes answers only, and the held-out review grades the SUPPLIED pipeline. So this
+      # job runs the base tree and never checks out candidate code at all.
+      #
+      # That is stronger than restoring the grading script from base, which is what this workflow
+      # used to do. Restoring one file is not enough: the steps below execute bootstrap.py, the
+      # compose files, and Poe tasks, any of which could plant code — a sitecustomize.py in the
+      # virtual environment, for one — that later runs inside the step holding HELD_OUT_SCENARIO.
+      # Nothing candidate-authored executes in this job.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+          # Full history, not the default shallow clone. The path gate below resolves a merge base,
+          # which means walking the parent chain on BOTH sides until they meet; a depth-limited clone
+          # truncates those chains and merge-base then finds nothing. No fixed depth is safe either,
+          # since it only moves the branch-age at which a legitimate PR starts failing. This workflow
+          # runs once per pull request event on a single-task repository, so the full clone is cheap.
+          fetch-depth: 0
+      - name: Fetch candidate history only for the permitted-path comparison
+        # No --depth on this fetch: a shallow fetch into a complete repository makes it shallow again
+        # and would re-break the merge base resolved in the next step. The candidate commit is
+        # fetched as data for one diff; it is never checked out and never executed.
+        run: |
+          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$PR_READ_TOKEN" | base64 -w0)" fetch --no-tags origin "$PR_HEAD_SHA"
+        env:
+          PR_READ_TOKEN: ${{ github.token }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      # Now a grading rule rather than a defense: the held-out review grades the supplied pipeline,
+      # so a submission that changed that pipeline would be graded on a different system than the
+      # one this Task teaches. Refuse rather than report a result about the wrong system.
+      - name: Enforce the submission path boundary
+        id: boundary
+        run: |
+          set -euo pipefail
+          # Diff against the merge base, not the base branch tip. base.sha is where the base branch
+          # happened to point when the event fired, so any commit it gained that the student's branch
+          # does not have would show up here as a "changed" file and hard-fail an untouched-boundary
+          # submission. Fail closed if the merge base cannot be resolved rather than grading blind.
+          merge_base="$(git merge-base ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})"
+          if [ -z "$merge_base" ]; then
+            echo "Could not resolve a merge base for this pull request — refusing to grade."
+            exit 2
+          fi
+          changed="$(git diff --name-only "$merge_base" ${{ github.event.pull_request.head.sha }})"
+          # The boundary is submission.yaml plus anything a student adds under
+          # tests/student/. Everything else here is supplied.
+          protected="$(printf '%s\n' "$changed" \
+            | grep -v -E '^(submission[.]yaml|tests/student/.+)?$' || true)"
+          if [ -n "$protected" ]; then
+            echo "exit_code=1" >> "$GITHUB_OUTPUT"
+            echo "This pull request changes paths outside Task 2.8's student-editable boundary:"
+            # Read line by line rather than letting the shell word-split $protected: a path containing
+            # a glob character would otherwise be expanded against the working tree.
+            while IFS= read -r offending_path; do
+              printf '  %s\n' "$offending_path"
+            done <<<"$protected"
+            echo "Only submission.yaml and files under tests/student/ may change."
+            echo "The held-out review cannot grade a submission that modifies the supplied system."
+            exit 1
+          fi
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: "3.12"
+      - name: Install pinned tooling
+        run: |
+          python infra/scripts/bootstrap.py
+          python infra/scripts/preflight.py
+          echo "$PWD/.tools/bin" >> "$GITHUB_PATH"
+          .tools/bin/uv sync --frozen
+      - name: Start the stack
+        run: .tools/bin/uv run --frozen poe start
+      - name: Wait for readiness
+        run: .tools/bin/uv run --frozen poe ready
+      - name: Ingest the supplied corpus
+        # The held-out scenario brings its own documents, but it grades the system in its
+        # normal state, and the supplied corpus is part of that state.
+        run: .tools/bin/uv run --frozen poe ingest
+      - name: Run the held-out check
+        id: grade
+        env:
+          HELD_OUT_SCENARIO: ${{ secrets.HELD_OUT_SCENARIO }}
+        run: |
+          set +e
+          if [ -z "$HELD_OUT_SCENARIO" ]; then
+            echo "HELD_OUT_SCENARIO secret is not set for this repository — cannot grade."
+            echo "exit_code=2" >> "$GITHUB_OUTPUT"
+            exit 2
+          fi
+          # The scenario reaches the script through the environment only. Passing it as an argument
+          # would publish it in /proc/<pid>/cmdline to every other process on the runner.
+          .tools/bin/uv run --frozen python tests/contract/held_out_review.py "http://localhost:${COLDLINE_API_HOST_PORT:-8000}"
+          grade_exit=$?
+          echo "exit_code=$grade_exit" >> "$GITHUB_OUTPUT"
+          exit "$grade_exit"
+      - name: Tear down
+        if: always()
+        run: .tools/bin/uv run --frozen poe reset
+      - name: Report the result on the exact PR commit
+        if: always()
+        # Three outcomes, kept apart on purpose. A student who fails the scenario needs to see
+        # `failure`; a broken runner or a missing secret must show `error` instead, so an
+        # infrastructure problem is never read as a wrong answer. The grading script uses exit 1
+        # for a failed assertion and exit 2 for anything it could not carry out.
+        env:
+          GH_TOKEN: ${{ steps.result-token.outputs.token }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BOUNDARY_EXIT_CODE: ${{ steps.boundary.outputs.exit_code }}
+          GRADE_EXIT_CODE: ${{ steps.grade.outputs.exit_code }}
+          GRADE_OUTCOME: ${{ steps.grade.outcome }}
+        run: |
+          state=failure
+          if [ "$GRADE_OUTCOME" = success ]; then
+            state=success
+          elif [ "$BOUNDARY_EXIT_CODE" = 1 ]; then
+            state=failure
+          elif [ "$GRADE_EXIT_CODE" != 1 ]; then
+            state=error
+          fi
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$PR_HEAD_SHA" \
+            -f state="$state" -f context="Task 2.8 held-out result" \
+            -f description="See trusted grading workflow for field feedback or infrastructure errors" \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > /dev/null

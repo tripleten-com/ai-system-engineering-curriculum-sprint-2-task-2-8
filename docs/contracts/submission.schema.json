@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Coldline Task 2.8 public answer contract. Five structured decision answers: the pipeline stage one designated retrieval miss is attributed to, one stage the same evidence proves operated normally, the storage layout each supplied vector-engine profile records, and one qualified object-store emulator divergence that applies to this stack. The two attribution answers are checked against the live stage evidence using the published rule in tests/diagnostics/attribution.py; the three classifications are checked against the supplied profiles under infra/profiles/, never against outside knowledge.",
+  "title": "Coldline Task 2.8 answers",
+  "description": "One miss attribution and three factual classifications, from supplied evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "answers"
+  ],
+  "properties": {
+    "answers": {
+      "description": "The only top-level answer mapping accepted by the public verifier.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attributed_failure_stage",
+        "ruled_out_stage",
+        "pgvector_storage_layout",
+        "qdrant_storage_layout",
+        "fidelity_limitation"
+      ],
+      "properties": {
+        "attributed_failure_stage": {
+          "description": "The one pipeline stage the designated query's stage evidence isolates as the cause of the miss. Read the evidence with `poe diagnose`; the published attribution rule is in docs/student/task-2-8-contract.md.",
+          "enum": [
+            "chunking",
+            "embedding",
+            "sparse_matching",
+            "authorization_filtering",
+            "fusion"
+          ]
+        },
+        "ruled_out_stage": {
+          "description": "One other stage the same evidence positively proves operated normally on the target chunk. A stage that never saw the chunk is unobserved, not ruled out, and it must differ from the attributed stage.",
+          "enum": [
+            "chunking",
+            "embedding",
+            "sparse_matching",
+            "authorization_filtering",
+            "fusion"
+          ]
+        },
+        "pgvector_storage_layout": {
+          "description": "The storage layout the supplied profile records for PostgreSQL with pgvector, from infra/profiles/vector-engines.yaml.",
+          "enum": [
+            "integrated_relational_table",
+            "dedicated_vector_payload_store"
+          ]
+        },
+        "qdrant_storage_layout": {
+          "description": "The storage layout the supplied profile records for Qdrant, from infra/profiles/vector-engines.yaml.",
+          "enum": [
+            "integrated_relational_table",
+            "dedicated_vector_payload_store"
+          ]
+        },
+        "fidelity_limitation": {
+          "description": "One qualified LocalStack divergence from Amazon Web Services (AWS), from infra/profiles/object-store-fidelity.yaml. Each published code carries a reproducible local observation and an authoritative description of the AWS behavior it differs from; codes that could not be substantiated are recorded there as withdrawn, with their reason.",
+          "enum": [
+            "policy_enforcement_gap",
+            "listing_pagination_not_exercised"
+          ]
+        }
+      }
+    }
+  }
+}

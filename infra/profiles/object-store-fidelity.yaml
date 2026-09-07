@@ -1,0 +1,120 @@
+# Coldline - Task 2.8
+# File: infra/profiles/object-store-fidelity.yaml
+# Component: Object store emulator fidelity profile
+# Purpose: State the qualified emulator divergences and the evidence for each.
+# Interacts With: docs/fidelity/ObjectStore.md and the fidelity observation checks
+# Sprint/Task: Sprint 2 - Project 2 / Task 2.8
+# Concepts: Emulator fidelity, observed evidence, bounded claims
+# Tools: YAML
+
+# The graded source for answers.fidelity_limitation, and the release-qualified
+# list. docs/fidelity/ObjectStore.md says the same things in prose; this file is
+# the one the checks read, and the answer enum matches these codes exactly.
+#
+# A code is listed here only when both halves exist: a reproducible observation
+# against this pinned emulator, and an authoritative description of what Amazon
+# Web Services (AWS) does instead. Sounding plausible is not a qualification.
+# Every listed observation has a matching check in
+# tests/contract/test_object_store_fidelity.py, so a claim here cannot quietly
+# stop being true.
+
+schema_version: 2
+
+# LocalStack is an AWS emulator. What it emulates depends on which build,
+# edition, and configuration is running, so all of that is pinned rather than
+# implied: a limitation observed on one configuration is not a limitation of
+# "LocalStack" in general.
+emulator:
+  product: LocalStack
+  emulates: Amazon Web Services (AWS)
+  edition: Community
+  image: localstack/localstack:4.9.1
+  digest: sha256:ef90c3d6d69e36752d0154f9bc21099fc70dfbffc99a0145a6d7d04a721a6124
+  configuration:
+    SERVICES: s3
+    PERSISTENCE: "0"
+    EAGER_SERVICE_LOADING: "1"
+    DEBUG: "0"
+  region: us-east-1
+  credentials: fixed local development strings, not secrets, from compose.yaml
+  # The only S3 operations this repository performs. A divergence in an
+  # operation nothing here calls is outside the scope of these codes.
+  exercised_api_behavior:
+    - CreateBucket
+    - HeadBucket
+    - PutObject
+    - GetObject
+    - ListObjectsV2
+
+limitations:
+  policy_enforcement_gap:
+    applies_here: true
+    statement: >-
+      The local endpoint does not evaluate credentials, IAM identity policy, or
+      bucket policy. Authorization outcomes observed here therefore say nothing
+      about whether the same call would be permitted in an AWS account.
+    local_observation: >-
+      Signing a ListObjectsV2 request for the corpus bucket with an invented
+      access key and secret returns the bucket contents rather than an error.
+      Observed against the pinned image above; reproduced by
+      tests/contract/test_object_store_fidelity.py.
+    aws_behavior: >-
+      AWS rejects a request whose signature does not verify against a real
+      access key, and separately evaluates IAM identity policy and any bucket
+      policy on every request, denying by default when no policy allows the
+      action. See the AWS S3 developer guide on identity and resource-based
+      policies, and the SigV4 signing process reference.
+    scope: >-
+      Applies to every S3 call this repository makes. It is a statement about
+      authorization only, and implies nothing about durability, consistency, or
+      performance.
+
+  listing_pagination_not_exercised:
+    applies_here: true
+    statement: >-
+      The supplied adapter loops over continuation tokens to page a listing,
+      and this corpus is too small to ever truncate one. That loop is therefore
+      unexercised locally, so a local pass establishes nothing about the
+      adapter's behavior against a truncated AWS response.
+    local_observation: >-
+      ListObjectsV2 on the corpus prefix returns two keys with IsTruncated
+      false and no NextContinuationToken, so `S3ObjectStore._list_keys` exits
+      after its first page. Observed against the pinned image above; reproduced
+      by tests/contract/test_object_store_fidelity.py.
+    aws_behavior: >-
+      AWS returns at most 1000 keys per ListObjectsV2 response, sets
+      IsTruncated to true when more remain, and supplies
+      NextContinuationToken for the next page. See the AWS S3 API reference for
+      ListObjectsV2.
+    scope: >-
+      Applies to the listing path only. It is a statement about what this
+      environment leaves untested, not a defect in the adapter.
+
+# Codes withdrawn from the earlier draft list, with the reason. They are
+# recorded rather than deleted so the withdrawal is reviewable, and they are
+# absent from the answer enum.
+withdrawn:
+  distributed_consistency_difference:
+    reason: >-
+      The claim it rested on is false. Amazon S3 has provided strong
+      read-after-write consistency for PUT and DELETE, including for list
+      operations, since December 2020. Locally, writing an object and
+      immediately reading and listing it also succeeds, so there is no observed
+      divergence to describe - and describing AWS listings as eventually
+      consistent would state something untrue about AWS.
+  upload_part_handling_divergence:
+    reason: >-
+      No code in this repository can reach it. `S3ObjectStore.write` calls
+      PutObject with a whole body, and the adapter exposes no create-multipart,
+      upload-part, or complete-multipart path, so the divergence cannot affect
+      this system. A check asserts the adapter performs no multipart call, so
+      this reason cannot quietly stop being true.
+
+# Release gate, per ADR009-R08: the answer enum must match the qualified list
+# above exactly, and CME confirms each code's observation and AWS description
+# before release. Two codes are qualified here; nothing is listed to preserve a
+# three-way choice.
+qualification:
+  status: proposed
+  confirmed_by_cme: false
+  answer_enum_matches_qualified_list: true

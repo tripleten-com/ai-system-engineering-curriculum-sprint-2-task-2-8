@@ -1,0 +1,80 @@
+# Coldline - Task 2.8
+# File: submission-sample.yaml
+# Component: Fictional completed answer sheet
+# Purpose: Show the accepted shape.
+# Interacts With: docs/contracts/submission.schema.json
+# Sprint/Task: Sprint 2 - Project 2 / Task 2.8
+# Concepts: Answer-sheet shape
+# Tools: YAML
+
+# Complete submission.yaml from the evidence sources named beside each answer group.
+# Keep the supplied keys; replace empty strings using each field's stated type.
+# Empty values and placeholder text fail verification.
+# Use submission-sample.yaml for format only; do not copy its fictional values.
+# Do not include secrets, personal data, or local absolute paths.
+# This fictional sample is not a result to submit; an exact copy is rejected.
+
+answers:
+  # Task 2.8 — Step 1: Miss attribution and held-out
+  # Trace intermediate stage evidence and attribute retrieval miss.
+  # The designated investigation q-dock-seal-log asks: "what do I record in the
+  # shift log after a dock door seal inspection". Its target chunk is
+  # sop-dock-door-seal#0001.
+  # Source: infra/corpus/investigation.jsonl; use its supplied caller context.
+  # Run `poe diagnose`, apply the ordered attribution rule, and identify one
+  # cause and one different stage positively shown to have worked for the target.
+  # Rule and evidence guidance: docs/student/task-2-8-contract.md.
+  #
+  # The same file supplies a second case, q-produce-humidity-band. It is also a
+  # miss, it is NOT a defect, and it is graded by nothing - it is there so you
+  # can see what a correct denial looks like beside a real one. Only answer for
+  # q-dock-seal-log.
+  #
+  # Stage options for both answers (use exact strings):
+  # - chunking: Splitting source documents into passages for retrieval.
+  # - embedding: Representing text as vectors for the dense similarity search arm.
+  # - sparse_matching: Finding candidate passages with the text search arm.
+  # - authorization_filtering: Restricting candidates to content the caller may read.
+  # - fusion: Combining search-arm rankings to select the final results.
+  #
+  # Choose one stage above isolated as the cause by the ordered rule and live evidence.
+  attributed_failure_stage: "fusion"
+  # Choose one different stage above that the evidence proves worked for the target.
+  # A stage that never saw the chunk is unobserved, not ruled out.
+  ruled_out_stage: "sparse_matching"
+
+  # Task 2.8 — Step 2: Miss attribution and held-out
+  # Compare PostgreSQL/pgvector and Qdrant profiles.
+  # Classify each supplied engine profile's storage layout.
+  # Source: infra/profiles/vector-engines.yaml; prose: docs/architecture/vector-engines.md.
+  #
+  # Storage-layout options for both engines (use exact strings):
+  # - integrated_relational_table: Embeddings are typed columns in relational
+  #   rows alongside the entity data.
+  # - dedicated_vector_payload_store: Vectors and associated data are stored in
+  #   collections of a service built for similarity search.
+  #
+  # Choose one layout above for the PostgreSQL/pgvector profile in the supplied file.
+  pgvector_storage_layout: "dedicated_vector_payload_store"
+  # Choose one layout above for the Qdrant profile in the supplied file.
+  qdrant_storage_layout: "integrated_relational_table"
+
+  # Task 2.8 — Step 3: Miss attribution and held-out
+  # Record LocalStack S3 fidelity limitation and pass held-out evaluation.
+  # Identify a qualified difference between the emulator and Amazon Web Services
+  # (AWS) that applies to this stack's pinned version, configuration, and the
+  # API behavior this repository actually exercises.
+  # Source: infra/profiles/object-store-fidelity.yaml; prose: docs/fidelity/ObjectStore.md.
+  # `poe fidelity-observations` reproduces each published observation.
+  #
+  # Fidelity options (use exact strings):
+  # - policy_enforcement_gap: A difference in enforcing access or bucket policies.
+  # - listing_pagination_not_exercised: This corpus is small enough that a
+  #   listing never truncates, so the adapter's pagination path never runs
+  #   against the page limit AWS applies.
+  #
+  # The profile also records the codes it WITHDREW, with the reason. They are
+  # absent from the answer contract, so you cannot record one; read why anyway.
+  #
+  # Choose one limitation above that the supplied profile qualifies for this stack.
+  fidelity_limitation: "listing_pagination_not_exercised"

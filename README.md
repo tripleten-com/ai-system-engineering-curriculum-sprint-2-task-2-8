@@ -69,8 +69,9 @@ poe verify
 | `poe diagnose` | Print the per-stage and custody evidence for both supplied investigations |
 | `poe attribution` | Rebuild, ingest, then run this Task's attribution checks |
 | `poe held-out-dry-run` | Run the held-out grading procedure against a fake scenario, in the open |
-| `poe benchmark` | Measure the adopted retrieval configuration against the original baseline |
-| `poe compare` | The same, with the cached judge comparison and the adoption policy |
+| `poe benchmark-baseline` | Capture the baseline arm in `.benchmark/baseline.json` |
+| `poe benchmark-experiment` | Capture the supplied configuration in `.benchmark/experiment.json` |
+| `poe compare` | Read both captured reports, compare the cached judge evidence, and apply the adoption policy |
 | `poe migrate` | Apply every migration inside the API container |
 | `poe migrate-current` | Print the revision the database is stamped at |
 | `poe migrate-down` | Roll back the most recent migration |
@@ -217,13 +218,20 @@ does not tell you, and for the difference between a `failure` and an `error` on 
 
 ## The settled experiment
 
-Task 2.7's experiment is closed. Both configuration files are supplied and protected from this
-Task, and `poe benchmark` and `poe compare` remain available as a standing diagnostic that compares
-the adopted configuration against the original baseline.
+Both configuration files are supplied and protected in this Task. For an optional local
+comparison, start and ingest the system, then run `poe benchmark-baseline` and
+`poe benchmark-experiment` before `poe compare`. The first two commands capture reports;
+`poe compare` reads them without running the system or measuring again. Use the capture command's
+`--recapture` option to replace its existing report. These local reports are not Task 2.8
+submission artifacts and do not replace your Task 2.7 evidence.
+
+The draft adoption policy still has unpublished latency constants. A comparison reports that
+blocker and exits unsuccessfully; the supplied configuration is not evidence of an approved
+keep/revert decision.
 
 ```text
 config/retrieval-baseline.yaml   the original baseline
-config/student/retrieval.yaml    the configuration Task 2.7's evidence adopted
+config/student/retrieval.yaml    the supplied checkpoint configuration
 ```
 
 Both arms state their parameters per request through the supplied evaluation endpoint, so neither
@@ -312,12 +320,24 @@ one extra query, so ordinary requests leave it off.
 Contract checks marked `runtime` need the running stack. `poe contract` skips them; `poe verify`
 and `poe runtime-contract` run them.
 
+## Submission checks
+
+Run `poe verify` locally before opening your student pull request. Public GitHub CI repeats
+the student checks. The course platform (CMS) runs the required protected grading separately
+and associates its results with your submission commit. A green template-export check, or a
+skipped student check on an `export/` branch, is not a passing grade. You do not configure
+GitHub grading secrets. Follow the Task lesson's instructor-review and progression policy.
+
 ## Task boundary
 
 Task 2.8 asks you to attribute one designated retrieval miss to exactly **one** pipeline stage,
 rule out one other stage with direct evidence, classify the storage layout each supplied engine
-profile records, record one qualified object-store divergence that applies to this stack, and
+profile records, record one code from the draft object-store fidelity profile, and
 confirm the protected held-out evaluation in CI.
+
+The fidelity profile's qualification remains unresolved: the credential check covers one listing
+request, and the pagination entry records missing test coverage rather than an observed AWS
+divergence. The existing answer codes remain in the draft while that release issue is reviewed.
 
 You change no code. The diagnostic, the attribution rule, the two investigation cases, the engine
 profiles, the emulator profile, and the held-out grading procedure are all supplied. What you
@@ -336,7 +356,7 @@ These paths are student-editable:
 - `submission.yaml`
 - anything you add under `tests/student/`
 
-Everything else is protected, and the held-out CI job refuses to grade a pull request that changed
+Everything else is protected, and the CMS held-out grader refuses to grade a pull request that changed
 anything else: it grades the supplied pipeline, so a submission that altered it would be graded on
 a different system.
 
@@ -352,12 +372,12 @@ stage and
 to rule another one out, record both, read `infra/profiles/vector-engines.yaml` and record the two
 storage layouts, read `infra/profiles/object-store-fidelity.yaml` and record one divergence that
 applies here, run `poe attribution` and then `poe verify`, open your pull request, and read the
-protected held-out check's result.
+CMS protected held-out check's result.
 
 ## Operational limits
 
-This local system has no user authentication, authorization, TLS termination, or production secret
-store. A retrieval request states its own tenancy and clearance, so that context is an asserted
+This local system does not authenticate users, terminate TLS, or manage production secrets.
+A retrieval request states its own tenancy and clearance, so that context is an asserted
 identity rather than a verified one. The Compose PostgreSQL password and the LocalStack access keys
 are local-only non-secret credentials. Never place real credentials, personal data, or production
 records in this repository, including in `infra/corpus/`.

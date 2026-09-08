@@ -9,7 +9,7 @@ statement quoted verbatim.
 | File | What it holds |
 |---|---|
 | `vector-engines.yaml` | Storage layout, filtering mechanism, and operational footprint for PostgreSQL with pgvector and for Qdrant |
-| `object-store-fidelity.yaml` | The documented LocalStack S3 divergences, and which of them apply to this stack |
+| `object-store-fidelity.yaml` | Draft credential-acceptance evidence, a pagination coverage gap, and unresolved release-qualification limits |
 
 The `pgvector` rows are derived from this repository itself: the `embedding vector(64)` column in
 `infra/postgres/002_retrieval_corpus.sql` and the query built in
@@ -45,4 +45,5 @@ the disagreement is a defect in the Task rather than in a submission.
 
 No performance, scale, recall, or cost claim. No recommendation. Both storage layouts are
 legitimate engineering choices, and this Task asks only which layout each engine implements and
-which emulator divergences this stack documents.
+which fidelity classifications this draft documents. The pagination coverage gap is not evidence
+of a LocalStack/AWS behavioral divergence; retaining its draft code does not qualify it for release.

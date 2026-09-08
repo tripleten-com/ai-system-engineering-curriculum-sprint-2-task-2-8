@@ -11,7 +11,10 @@ Concepts:          HTTP boundary, composition, configuration ownership
 Tools:             Python 3.12, Redis, PostgreSQL, LocalStack, Pydantic
 """
 
-from pydantic import Field
+from pathlib import Path
+
+import yaml
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -49,3 +52,37 @@ class ApiSettings(BaseSettings):
     retrieval_top_k: int = Field(default=3, ge=1, le=50)
     retrieval_dense_weight: float = Field(default=0.5, ge=0.0, le=1.0)
     retrieval_token_budget: int = Field(default=320, ge=32, le=4_000)
+
+
+class SuppliedRetrievalParameters(BaseModel):
+    """Validate the same bounded parameters accepted by the experiment harness."""
+
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    top_k: int = Field(strict=True, ge=1, le=12)
+    fusion_weight: float = Field(strict=True, ge=0.0, le=1.0)
+
+
+class SuppliedRetrievalFile(BaseModel):
+    """Reject misspelled or missing top-level configuration keys."""
+
+    model_config = ConfigDict(extra="forbid")
+    retrieval: SuppliedRetrievalParameters
+
+
+SUPPLIED_RETRIEVAL_PATH = Path(__file__).resolve().parents[2] / "config/student/retrieval.yaml"
+
+
+def load_api_settings(retrieval_path: Path = SUPPLIED_RETRIEVAL_PATH) -> ApiSettings:
+    """Compose Task 2.8 onward from its supplied file and infrastructure environment.
+
+    These two protected checkpoint parameters take precedence over inherited
+    environment defaults. Other process settings still come from the environment.
+    Loading this configuration does not establish an approved adoption decision.
+    """
+    supplied = SuppliedRetrievalFile.model_validate(
+        yaml.safe_load(retrieval_path.read_text(encoding="utf-8"))
+    ).retrieval
+    return ApiSettings(  # type: ignore[call-arg]  # infrastructure comes from the environment
+        retrieval_top_k=supplied.top_k,
+        retrieval_dense_weight=supplied.fusion_weight,
+    )

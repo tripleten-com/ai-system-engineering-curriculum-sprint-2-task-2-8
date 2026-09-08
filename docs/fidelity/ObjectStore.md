@@ -40,48 +40,51 @@ does **not** prove:
 
 | Not proven | Why it matters |
 |---|---|
-| IAM and bucket-policy evaluation | The local endpoint accepts development credentials and evaluates no least-privilege policy. A call that succeeds here can be denied in a managed account. |
+| IAM and bucket-policy evaluation | The supplied credential check contains no policy allow/deny case. A successful local listing therefore does not establish policy enforcement or an AWS caller's permissions. |
 | Durability and replication | There is no multi-facility storage, no versioning guarantee, and no restore path behind this container. |
-| Listing behavior at scale | Amazon S3 caps a `ListObjectsV2` response at 1000 keys and sets `IsTruncated` with a continuation token. This corpus is two objects, so the adapter's pagination loop exits on its first page and is never exercised here. |
+| Listing behavior at scale | The supplied corpus listing fits in one response. Its successful read does not exercise the adapter's continuation path or demonstrate a pagination difference from AWS. |
 | Multipart upload and large-object handling | The corpus artifacts are small; no multipart path is exercised. |
-| Encryption at rest, key management, access logging, or object lock | None of these are configured or emulated. |
+| Encryption at rest, key management, access logging, or object lock | The supplied checks do not exercise these controls. |
 | Throughput, latency, request cost, or throttling | The container shares one host; no measurement here is a managed-service figure. |
 
-## The qualified divergence codes
+## Draft fidelity codes and qualification limits
 
-Task 2.8 asks for one of these codes.
+The current unpublished Task 2.8 contract accepts one of these two codes.
 [`infra/profiles/object-store-fidelity.yaml`](../../infra/profiles/object-store-fidelity.yaml) is
 the machine-readable form and is what the check reads; the answer enum matches it exactly.
 
-A code is published only when both halves of its evidence exist: an observation you can
-reproduce against the pinned emulator above, and an authoritative description of what AWS does
-instead. Sounding plausible is not a qualification. Each observation has a matching check in
-`tests/contract/test_object_store_fidelity.py`, so a published claim cannot quietly stop being
-true.
+The checks reproduce the observations below. Their presence and enum membership do not establish
+release qualification. In particular, the pagination observation is a coverage gap, not a
+demonstrated emulator divergence. Proposed ADR009-R08 requires a qualified divergence list before
+release; that alignment remains unresolved. The draft answer codes and grading logic are unchanged.
 
 ### `policy_enforcement_gap`
 
-The local endpoint does not evaluate credentials, IAM identity policy, or bucket policy, so an
-authorization outcome observed here says nothing about whether AWS would permit the same call.
+The supplied check exercises credential acceptance for one signed corpus-listing request. It
+does not configure or test an IAM identity policy or a bucket policy.
 
 - **Observation.** Signing a `ListObjectsV2` request for the corpus bucket with an *invented*
-  access key and secret returns the bucket contents rather than an error.
-- **AWS behavior.** AWS rejects a request whose signature does not verify against a real access
-  key, and separately evaluates IAM identity policy and any bucket policy on every request,
-  denying by default when nothing allows the action.
-- **Scope.** Authorization only. It implies nothing about durability, consistency, or performance.
+  access key and secret must return a nonempty listing to pass the check. Retain an actual run
+  result against the pinned configuration before claiming that observation is qualified.
+- **AWS behavior.** AWS authenticates signed requests using their signing credentials;
+  inventing credentials does not establish an AWS identity. Authentication is distinct from
+  the permission to perform an operation. See [AWS SigV4](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html).
+- **Scope.** This request, bucket/prefix, and emulator configuration only. A pass does not show
+  that policies are never enforced, or establish any other S3 operation's behavior.
 
 ### `listing_pagination_not_exercised`
 
-The adapter loops over continuation tokens to page a listing, and this corpus is too small to
-ever truncate one, so that loop is never exercised locally.
+The supplied corpus run does not exercise the adapter's continuation path. That identifies a
+limit in the test coverage, not an observed LocalStack/AWS difference.
 
-- **Observation.** `ListObjectsV2` on the corpus prefix returns two keys with `IsTruncated`
-  false and no `NextContinuationToken`, so `S3ObjectStore._list_keys` exits after its first page.
-- **AWS behavior.** AWS returns at most 1000 keys per `ListObjectsV2` response, sets
-  `IsTruncated` when more remain, and supplies `NextContinuationToken` for the next page.
-- **Scope.** The listing path only. It describes what this environment leaves untested, not a
-  defect in the adapter.
+- **Observation.** The check requires a nonempty result with fewer than 1000 keys,
+  `IsTruncated: false`, and no `NextContinuationToken`. It does not force another page.
+- **AWS behavior.** `ListObjectsV2` returns at most 1000 keys per response and provides a
+  continuation token for a truncated listing. A smaller listing can finish in one response too.
+  See the [AWS API reference](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html).
+- **Qualification limit.** Both services can produce the observed single-page result. The current
+  check therefore does not qualify this code as the divergence required by proposed ADR009-R08.
+  Keep this release issue visible; do not silently replace the answer enum or declare it qualified.
 
 ## Codes withdrawn from the earlier draft list
 

@@ -7,11 +7,11 @@
 # Concepts: Controlled experiment, single-variable change
 # Tools: YAML
 
-# Supplied and protected. Task 2.7's experiment is settled: this is the
-# configuration its evidence supported keeping, and both this file and
-# config/retrieval-baseline.yaml are now protected. `poe benchmark` and
-# `poe compare` still run, and now compare the adopted configuration against
-# the original baseline - a standing diagnostic rather than an exercise.
+# Supplied and protected. The Task 2.8/2.9 product composition loads these
+# parameters. Both this file and config/retrieval-baseline.yaml are protected.
+# Capture with `poe benchmark-baseline` and `poe benchmark-experiment`, then
+# read those reports with `poe compare`. The draft policy remains unpublished;
+# this checkpoint alone is not evidence of a qualified keep/revert decision.
 #
 # A student's own Task 2.7 experiment stays in that Task's pull request and
 # never has to match this file.

@@ -34,9 +34,10 @@ dedicated platform group.
 
 ## PostgreSQL with pgvector
 
-**Deployed in this repository**, as PostgreSQL 16 with pgvector from
-`pgvector/pgvector:pg16`, pinned by digest in `compose.yaml`. You can read every claim below
-out of the code.
+**Supplied as this repository's runtime**, from `pgvector/pgvector:pg16`, pinned by digest in
+`compose.yaml`. The same pinned image reported PostgreSQL 16.15 and pgvector 0.8.6 during
+Task 2.5 qualification on 2026-09-08. That version observation is not a Task 2.8 qualification.
+The schema and write-path claims below are also inspectable in the supplied code.
 
 **Storage and layout.** `infra/postgres/002_retrieval_corpus.sql` declares:
 
@@ -50,51 +51,69 @@ CREATE TABLE IF NOT EXISTS chunks (
     ...
 ```
 
-The embedding is a column. It sits in the same row as the chunk text, the tenancy label, and the
-provenance record, and it is created, updated, and deleted with that row.
+The embedding is a column beside chunk text, the tenancy label, and provenance. The supplied
+document writer inserts the document and its chunks, including embeddings, in one transaction.
+An embedding does not automatically regenerate when someone changes the text column.
 
-**Filtering.** One query plan. The access predicate and the distance ordering are written into the
-same SQL statement, so the planner decides how to combine them. That is exactly why the Task 2.4
-access constraint is a query-time filter and not a post-filter: look at
-`src/adapters/retriever/postgres_hybrid.py` and you will find the constraint clause inside both
-arms' `WHERE`, not applied to their results.
+**Filtering.** Each search arm places its access predicate inside its SQL statement; the dense
+arm also orders by vector distance. Inspect both arms' `WHERE` clauses in
+`src/adapters/retriever/postgres_hybrid.py`. The planner controls execution order. In particular,
+filtering with an approximate index can happen after an index scan and yield fewer matches.
+Query-time enforcement alone does not prove complete recall. See the versioned
+[pgvector filtering reference](https://github.com/pgvector/pgvector/blob/v0.8.6/README.md#filtering).
 
-**Operational footprint.** One datastore to run, back up, and restore. The embeddings are inside
-the same transaction boundary as the documents they belong to, so a restore cannot recover one
-without the other, and a schema migration covers both.
+**Operational footprint.** One datastore owns documents, chunks, and stored embeddings. The
+supplied write transaction does not need to propagate a second copy to another vector service.
+Schema migrations change the objects they explicitly target; they need not change every table.
 
-**Backup, restore, and synchronization.** One backup covers documents, chunks, and vectors
-together, and one restore returns them to a single consistent point. There is no second copy to
-keep in step, so there is no synchronization path to own and no reindex-after-write step.
+**Backup, restore, and synchronization.** A complete, consistent database backup can include
+documents, chunks, and vectors together. Successfully restoring that full backup to a compatible
+database recovers their shared snapshot. PostgreSQL also supports selective restores, whose
+consistency needs separate attention. See the PostgreSQL 16 documentation for
+[consistent dumps](https://www.postgresql.org/docs/16/backup-dump.html) and
+[selective restore](https://www.postgresql.org/docs/16/app-pgrestore.html).
+
+There is no cross-datastore synchronization in this supplied write path. The application still
+owns embedding generation and updates when source text changes. Index maintenance and rebuilding
+remain possible; pgvector explicitly documents
+[reindexing](https://github.com/pgvector/pgvector/blob/v0.8.6/README.md#vacuuming).
 
 ## Qdrant
 
 **Not installed, not deployed, and not required by this Task.** Do not try to run it. The
 comparison is a reading exercise; the profile is what the checks grade.
 
-The rows below describe the Qdrant 1.x documented data model — collections, points, payloads,
-payload filtering, and collection snapshots. No version is pinned, because nothing here runs it,
-and nothing below was observed in a running cluster.
+The [Qdrant v1.15.0 API specification](https://github.com/qdrant/qdrant/blob/v1.15.0/docs/redoc/master/openapi.json)
+is the versioned reading reference for collections, points, payloads, and filtered queries.
+The linked vendor concept pages were reviewed on 2026-09-08 and can change or discuss later
+releases. This documentation reference is not a deployment pin or an observed runtime result.
 
-**Storage and layout.** Qdrant organizes data into *collections* of *points*. Each point carries a
-vector and a JSON payload. There is no relational schema and no SQL planner: the collection exists
-to serve similarity search over those points, and whatever database owns the business entities is a
-different system.
+**Storage and layout.** Qdrant organizes data into *collections* of *points* with vector data and
+optional JSON payloads. A point can hold named vectors, so the model is not limited to one vector
+per point. The entity database remains separate under this profile's declared assumptions. See
+[collections](https://qdrant.tech/documentation/manage-data/collections/),
+[points](https://qdrant.tech/documentation/manage-data/points/), and
+[payloads](https://qdrant.tech/documentation/manage-data/payload/).
 
-**Filtering.** Payload conditions are evaluated against the point payload, either during index
-traversal or as a stage around it. The filter and the distance search are parts of one
-vector-search request rather than of one relational plan.
+**Filtering.** One vector-search request can carry conditions on payload fields. Qdrant uses
+payload indexes and filter cardinality estimates to choose a search strategy; the filter does not
+prescribe one fixed traversal order. See [filtering](https://qdrant.tech/documentation/search/filtering/)
+and [payload indexing](https://qdrant.tech/documentation/manage-data/indexing/#payload-index).
 
 **Operational footprint.** A second service alongside the entity database: its own cluster, its own
 snapshot and restore lifecycle, and a synchronization path to keep its points consistent with the
-source of truth. That synchronization is the cost the integrated layout does not have, and the
-independence is the benefit the integrated layout does not have.
+source of truth. This second service follows from the declared architecture; it is not a claim
+that every Qdrant deployment must have a separate entity database.
 
-**Backup, restore, and synchronization.** Two independent lifecycles: a collection snapshot and
-the entity database's own backup are taken and restored separately, so a restore has to reconcile
-the point in time each came from. Synchronization is owned by the application — every write to the
-source of truth needs a matching upsert or delete against the collection, plus a way to detect and
-repair divergence after a partial failure or a reindex.
+**Backup, restore, and synchronization.** A collection snapshot contains Qdrant collection data
+on the node where it is taken. Distributed deployments need the appropriate per-node recovery
+procedure. It does not back up the external entity database; recovery must coordinate or reconcile
+the two saved states. See [Qdrant snapshots](https://qdrant.tech/documentation/operations/snapshots/).
+
+The application or ingestion pipeline must propagate source changes affecting indexed vectors or
+payloads, including relevant deletions, and detect and repair divergence after partial failures or
+rebuilding. Unrelated source writes need no collection update. This is an operational implication
+of the declared separate-store architecture, not a measured property of a Qdrant installation.
 
 ## What this comparison does not claim
 

@@ -187,14 +187,12 @@ def test_storage_layout_classifications_match_the_supplied_profiles(
 
 
 def test_recorded_fidelity_limitation_is_a_qualified_code() -> None:
-    """The limitation must be one the supplied profile publishes as qualified.
+    """Match the current draft code list without certifying release qualification.
 
-    Every published code carries a reproducible local observation and an
-    authoritative description of the AWS behavior it differs from; the
-    observations themselves are reproduced by
-    tests/contract/test_object_store_fidelity.py. Codes that could not be
-    substantiated are recorded in the profile as withdrawn, with their reason,
-    and are absent from the answer enum.
+    The profile distinguishes the credential observation from the pagination
+    coverage gap. This membership check cannot establish that either entry is
+    a release-qualified emulator divergence. The draft assessment remains
+    unchanged pending review of the profile's qualification limitations.
     """
     profile = _profile_document()
     limitations = profile["limitations"]

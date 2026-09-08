@@ -27,7 +27,7 @@ from adapters.persistence import PostgresExceptionRepository, PostgresIdempotenc
 from adapters.queue import RedisJobQueue
 from adapters.retriever import PostgresHybridRetriever
 from adapters.telemetry import configure_tracing
-from api.config import ApiSettings
+from api.config import load_api_settings
 from api.document_service import DocumentService
 from api.experiment import ExperimentRetrieval
 from api.extensions import wiring
@@ -36,7 +36,7 @@ from api.routes import create_app
 from api.runtime import RuntimeBindings
 from api.use_cases import ReadingApplication
 
-settings = ApiSettings()  # type: ignore[call-arg]  # values come from the protected environment
+settings = load_api_settings()
 configure_json_logging(settings.service_name)
 tracer_provider = configure_tracing(settings.service_name, settings.otel_endpoint)
 RedisInstrumentor().instrument()

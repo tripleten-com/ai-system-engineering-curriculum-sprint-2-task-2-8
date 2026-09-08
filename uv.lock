@@ -294,6 +294,7 @@ dependencies = [
 api = [
     { name = "fastapi" },
     { name = "opentelemetry-instrumentation-fastapi" },
+    { name = "pyyaml" },
     { name = "uvicorn" },
 ]
 dev = [
@@ -328,6 +329,7 @@ requires-dist = [
 api = [
     { name = "fastapi", specifier = "==0.141.1" },
     { name = "opentelemetry-instrumentation-fastapi", specifier = "==0.65b0" },
+    { name = "pyyaml", specifier = "==6.0.3" },
     { name = "uvicorn", specifier = "==0.52.4" },
 ]
 dev = [

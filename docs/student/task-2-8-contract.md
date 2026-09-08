@@ -2,7 +2,7 @@
 
 Attribute one designated retrieval miss to exactly one pipeline stage, rule out one other stage
 with direct evidence, classify the storage layout each supplied engine profile records, and record
-one qualified object-store divergence that applies to this stack. You change no code.
+one code from this stack's draft fidelity profile. You change no code.
 
 One of the two misses you are shown is a defect and the other is the system working correctly.
 Both look the same from the outside, and separating them is the first thing the published rule
@@ -152,17 +152,21 @@ grading you on outside knowledge about these products.
 No preference is graded. Both layouts are legitimate, and no performance, scale, or cost claim is
 made or assessed.
 
-## The object-store divergence
+## The object-store fidelity evidence
 
 `infra/profiles/object-store-fidelity.yaml` is the graded source;
 `docs/fidelity/ObjectStore.md` is the prose form. LocalStack is an Amazon Web Services (AWS)
 emulator, and the profile pins which build, edition, and configuration is running — a limitation
 observed on one configuration is not a limitation of LocalStack in general.
 
-A code is published only when both halves of its evidence exist: an observation you can reproduce
-against that pinned emulator, and an authoritative description of what AWS does instead. Sounding
-plausible is not a qualification. `poe fidelity-observations` reproduces every published
-observation, so you can see the evidence rather than take it on trust.
+`poe fidelity-observations` checks the profile's local observations. Its invented-credential
+listing check does not test IAM or bucket-policy enforcement. Its single-page listing check
+records a gap in pagination coverage; AWS can return the same single-page result.
+
+**Release qualification remains unresolved.** The current draft accepts both existing codes,
+but a coverage gap alone does not establish the emulator divergence required by proposed
+ADR009-R08. Check success or enum membership cannot certify that release requirement. Keep the
+draft answer contract unchanged until the qualification issue is reviewed.
 
 The profile also records the codes that were **withdrawn**, with the reason, and those are absent
 from the answer contract entirely — you cannot record one. Read those reasons too: one was
@@ -172,9 +176,10 @@ divergence whose premise is false is not a limitation at all.
 
 ## The held-out evaluation
 
-Sprint 2 has exactly one held-out scenario, and it runs in protected CI after the public checks.
+Sprint 2 has exactly one held-out scenario. The CMS grading integration runs it in a protected
+environment after the public checks and reports its result for the same submission commit.
 
-- You do not run it, download it, or inspect it. The scenario reaches CI from a protected secret
+- You do not run it, download it, or inspect it. The scenario reaches the grader from private assets
   and is never committed to this repository.
 - What *is* committed is the grading procedure, `tests/contract/held_out_review.py`. It ingests the
   scenario's own documents through the supplied document API, runs its queries, requires each to
@@ -183,7 +188,7 @@ Sprint 2 has exactly one held-out scenario, and it runs in protected CI after th
   both retrieval arms against content the public corpus does not contain.
 - `poe held-out-dry-run` runs that procedure against a fake scenario written in the open, so you
   can see the mechanism work. It grades nothing.
-- CI prints only pass, fail, or "contact course support". Nothing about the scenario appears in the
+- The grader reports only pass, fail, or "contact course support". Nothing about the scenario appears in the
   output, and no exception text is printed either — a traceback could carry a held-out document
   into a log you can read.
 
@@ -193,7 +198,7 @@ Read this part carefully, because it is easy to assume more than it does.
 
 Task 2.8 is an **answers-only** Task: you change no application code. So the protected job runs
 the **supplied** tree, at the base commit, rather than your branch — deliberately, and not as a
-shortcut. The job holds the held-out secret, and nothing candidate-authored executes inside it.
+shortcut. The CMS worker holds the private scenario, and nothing candidate-authored executes inside it.
 Checking out your branch would run your `bootstrap.py`, your compose files, and your Poe tasks in
 that job, any of which could plant code that later runs in the step holding the secret.
 
@@ -219,7 +224,7 @@ was wrong.
 | `ruled_out_stage` | one of five stages | the same evidence, through the ruled-out table above |
 | `pgvector_storage_layout` | one of two layouts | `infra/profiles/vector-engines.yaml` |
 | `qdrant_storage_layout` | one of two layouts | the same profile |
-| `fidelity_limitation` | one qualified code | `infra/profiles/object-store-fidelity.yaml` |
+| `fidelity_limitation` | one current draft code; release qualification pending | `infra/profiles/object-store-fidelity.yaml` |
 
 ## What the checks verify
 
@@ -229,7 +234,7 @@ was wrong.
 | `test_attributed_stage_matches_the_stage_evidence` | The recorded stage against the rule applied to live evidence |
 | `test_ruled_out_stage_is_proven_by_the_stage_evidence` | The recorded stage against the set the evidence positively proves |
 | `test_storage_layout_classifications_match_the_supplied_profiles` | Both classifications against `vector-engines.yaml` |
-| `test_recorded_fidelity_limitation_is_a_qualified_code` | The recorded code against the qualified list in `object-store-fidelity.yaml` |
+| `test_recorded_fidelity_limitation_is_a_qualified_code` | The recorded code against the current draft list in `object-store-fidelity.yaml`; this membership check does not certify release qualification |
 
 Two supplied modules assess nothing and exist to keep the Task honest.
 `tests/contract/test_object_store_fidelity.py` reproduces each published fidelity observation and

@@ -4,18 +4,17 @@
 
 File:              tests/contract/test_object_store_fidelity.py
 Component:         Contract tests — Object store fidelity observations
-Purpose:           Reproduce the observation behind every published emulator limitation.
+Purpose:           Check draft fidelity observations without overstating their scope.
 Interacts With:    The running LocalStack endpoint and infra/profiles/object-store-fidelity.yaml
 Sprint/Task:       Sprint 2 — Project 2 / Task 2.8
 Concepts:          Emulator fidelity, observed evidence, bounded claims
 Tools:             Python 3.12, pytest, boto3
 
 Supplied and protected, and not part of the assessed set: nothing here reads a
-submission. These checks exist so the published limitation codes stay honest.
-Each qualified code in the profile names a local observation, and each
-observation is reproduced here, so a code cannot survive on plausibility alone
-and a change to the adapter or the emulator configuration that invalidates one
-fails a check instead of quietly making the documentation wrong.
+submission. A passing credential check concerns one signed listing request;
+it does not test IAM or bucket-policy evaluation. A passing single-page
+listing check records a coverage gap, not an emulator/AWS divergence.
+Draft-code membership and these observations do not certify release qualification.
 """
 
 from __future__ import annotations
@@ -80,7 +79,7 @@ def _profile() -> dict[str, Any]:
 
 
 def test_every_qualified_code_carries_an_observation_and_an_aws_description() -> None:
-    """A published code needs both halves of its evidence, in writing."""
+    """Require evidence descriptions without certifying their qualification."""
     limitations = _profile()["limitations"]
     assert limitations, "the profile publishes no limitation at all"
     for code, entry in limitations.items():
@@ -95,9 +94,9 @@ def test_every_qualified_code_carries_an_observation_and_an_aws_description() ->
 def test_the_local_endpoint_accepts_unrelated_credentials() -> None:
     """Reproduce the observation behind `policy_enforcement_gap`.
 
-    Nothing here is an attack. It asks the emulator a question a real account
-    would refuse to answer, so that "this endpoint evaluates no policy" is an
-    observation rather than an assumption.
+    This tests credential acceptance for one signed listing request. It sets
+    no IAM or bucket policy, so its result establishes no policy-enforcement
+    behavior for either the local endpoint or a managed account.
     """
     assert "policy_enforcement_gap" in _profile()["limitations"]
     rogue = _client(access_key="not-a-real-key", secret_key="not-a-real-secret")
@@ -118,7 +117,7 @@ def test_the_local_endpoint_accepts_unrelated_credentials() -> None:
 
 
 def test_the_listing_never_truncates_so_the_pagination_loop_is_unexercised() -> None:
-    """Reproduce the observation behind `listing_pagination_not_exercised`."""
+    """Record a single-page coverage gap, not a pagination divergence."""
     assert "listing_pagination_not_exercised" in _profile()["limitations"]
     client = _client(
         access_key="localstack-development-key", secret_key="localstack-development-secret"

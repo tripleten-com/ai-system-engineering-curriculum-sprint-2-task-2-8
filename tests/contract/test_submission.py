@@ -106,7 +106,9 @@ def test_both_storage_layouts_are_well_formed(tmp_path: Path, layout: str) -> No
 
 def test_blank_template_fails_with_field_address(tmp_path: Path) -> None:
     """An untouched answer sheet must identify the first incomplete field."""
-    root = _task_root(tmp_path, (ROOT / "submission.yaml").read_text(encoding="utf-8"))
+    root = _task_root(
+        tmp_path, (ROOT / "tests/fixtures/submission-template.yaml").read_text(encoding="utf-8")
+    )
 
     with pytest.raises(SubmissionError, match="answers.attributed_failure_stage"):
         validate_submission(root / "submission.yaml", SCHEMA)
@@ -202,7 +204,9 @@ def test_public_entrypoint_reports_an_incomplete_answer_sheet(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """Catch a verifier entrypoint that skips the real submission contract."""
-    root = _task_root(tmp_path, (ROOT / "submission.yaml").read_text(encoding="utf-8"))
+    root = _task_root(
+        tmp_path, (ROOT / "tests/fixtures/submission-template.yaml").read_text(encoding="utf-8")
+    )
 
     assert main(root, changed_paths=[]) == 1
     assert "answers.attributed_failure_stage is incomplete" in capsys.readouterr().err

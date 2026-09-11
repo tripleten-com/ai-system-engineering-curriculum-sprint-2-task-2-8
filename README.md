@@ -197,19 +197,19 @@ contrast and is graded by nothing. **Both are misses; only one is a defect.**
 
 `poe diagnose` runs each with the stage evidence turned on and prints, stage by stage, whether the
 target chunk was there — and prints the target document's custody record beside its access label,
-which is the evidence that separates the two cases. Attributing the designated miss to one stage,
+so you can compare both kinds of observation. Attributing the designated miss to one stage,
 and ruling another one out, is the Task. The published rule for both is in
 [`docs/student/task-2-8-contract.md`](docs/student/task-2-8-contract.md).
 
 ## The held-out evaluation
 
-Sprint 2's one held-out scenario runs in protected CI, after the public checks, and never here. The
+Sprint 2's one held-out scenario is run by the CMS grading integration after the public checks. The
 grading *procedure* is committed at `tests/contract/held_out_review.py`; the scenario it grades
-arrives from a protected secret at runtime. `poe held-out-dry-run` exercises that procedure against
+arrives from private course assets at runtime. `poe held-out-dry-run` exercises that procedure against
 a fake scenario written in the open, so you can watch the mechanism work without seeing the real
 one.
 
-That job runs the **supplied** tree rather than your branch, because it holds the held-out secret
+The CMS worker runs the **supplied** tree rather than your branch, because it holds private assets
 and this Task changes no application code. So it grades the delivered retrieval pipeline against
 unseen content, and what it checks about your submission is that the pull request stayed inside
 `submission.yaml` and `tests/student/`. See

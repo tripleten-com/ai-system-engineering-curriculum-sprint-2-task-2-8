@@ -147,7 +147,10 @@ engines:
 # Release gate, per ADR009-R07: CME independently verifies both profiles and the
 # accepted answers before release.
 qualification:
-  status: proposed
+  status: local-release-candidate
+  authority: ADR012-R03-R05
+  approval: source PR approval and merge
+  additional_owner_review: deferred
   confirmed_by_cme: false
 
 # What this comparison is not. Recording it here keeps the Task from implying a

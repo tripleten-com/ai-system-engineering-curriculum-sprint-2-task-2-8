@@ -170,6 +170,24 @@ The application source lives in five flat packages:
 adapters. Process settings live in `src/api/config.py` and `src/worker/config.py`; other modules
 receive settings or collaborators through function and constructor arguments.
 
+## Inspect database and object-store evidence
+
+After `poe ingest`, use the PostgreSQL client already installed in the supplied container.
+These read-only commands show the table definitions and the stored chunk representations:
+
+```shell
+docker compose exec -T postgres psql -U coldline -d coldline -c "\d documents"
+docker compose exec -T postgres psql -U coldline -d coldline -c "\d chunks"
+docker compose exec -T postgres psql -U coldline -d coldline -c "SELECT chunk_id, document_id, chunk_index, vector_dims(embedding), search_document, tenant_id, access_tier FROM chunks ORDER BY chunk_id;"
+```
+
+Compare the results with `infra/postgres/002_retrieval_corpus.sql` and the supplied corpus
+fixtures. From Task 2.6 onward, also compare `poe migrate-current` and the files in
+`migrations/versions/` with the live schema. For object-store evidence, use `GET /api/v1/corpus/objects?prefix=corpus/`
+at the API URL above and inspect `docker compose logs localstack`. The initializer provisions
+resources and uploads the supplied objects; `poe ingest` loads the searchable database rows.
+Use the Task lesson to decide which observations to collect and which changes are permitted.
+
 ## The five ports
 
 Find the available interfaces in `src/ports/`. A port describes an application capability; an
@@ -197,19 +215,19 @@ contrast and is graded by nothing. **Both are misses; only one is a defect.**
 
 `poe diagnose` runs each with the stage evidence turned on and prints, stage by stage, whether the
 target chunk was there — and prints the target document's custody record beside its access label,
-which is the evidence that separates the two cases. Attributing the designated miss to one stage,
+so you can compare both kinds of observation. Attributing the designated miss to one stage,
 and ruling another one out, is the Task. The published rule for both is in
 [`docs/student/task-2-8-contract.md`](docs/student/task-2-8-contract.md).
 
 ## The held-out evaluation
 
-Sprint 2's one held-out scenario runs in protected CI, after the public checks, and never here. The
+Sprint 2's one held-out scenario is run by the CMS grading integration after the public checks. The
 grading *procedure* is committed at `tests/contract/held_out_review.py`; the scenario it grades
-arrives from a protected secret at runtime. `poe held-out-dry-run` exercises that procedure against
+arrives from private course assets at runtime. `poe held-out-dry-run` exercises that procedure against
 a fake scenario written in the open, so you can watch the mechanism work without seeing the real
 one.
 
-That job runs the **supplied** tree rather than your branch, because it holds the held-out secret
+The CMS worker runs the **supplied** tree rather than your branch, because it holds private assets
 and this Task changes no application code. So it grades the delivered retrieval pipeline against
 unseen content, and what it checks about your submission is that the pull request stayed inside
 `submission.yaml` and `tests/student/`. See
@@ -332,12 +350,12 @@ GitHub grading secrets. Follow the Task lesson's instructor-review and progressi
 
 Task 2.8 asks you to attribute one designated retrieval miss to exactly **one** pipeline stage,
 rule out one other stage with direct evidence, classify the storage layout each supplied engine
-profile records, record one code from the draft object-store fidelity profile, and
-confirm the protected held-out evaluation in CI.
+profile records, record one code from the published object-store fidelity profile, and
+complete the protected held-out evaluation through the CMS submission flow.
 
-The fidelity profile's qualification remains unresolved: the credential check covers one listing
-request, and the pagination entry records missing test coverage rather than an observed AWS
-divergence. The existing answer codes remain in the draft while that release issue is reviewed.
+The credential check covers one listing request; it makes no IAM-policy or bucket-policy claim.
+The published answer list contains only `credential_validation_gap`. Pagination is an ungraded
+coverage gap, and withdrawn names are excluded. Codespaces qualification remains deferred.
 
 You change no code. The diagnostic, the attribution rule, the two investigation cases, the engine
 profiles, the emulator profile, and the held-out grading procedure are all supplied. What you
@@ -370,8 +388,8 @@ In outline: start the stack and ingest the corpus, run `poe diagnose` and read t
 custody evidence for both cases, apply the published rule to attribute the designated miss to one
 stage and
 to rule another one out, record both, read `infra/profiles/vector-engines.yaml` and record the two
-storage layouts, read `infra/profiles/object-store-fidelity.yaml` and record one divergence that
-applies here, run `poe attribution` and then `poe verify`, open your pull request, and read the
+storage layouts, read `infra/profiles/object-store-fidelity.yaml` and record its published
+limitation code, run `poe attribution` and then `poe verify`, open your pull request, and read the
 CMS protected held-out check's result.
 
 ## Operational limits

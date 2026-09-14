@@ -47,18 +47,17 @@ does **not** prove:
 | Encryption at rest, key management, access logging, or object lock | The supplied checks do not exercise these controls. |
 | Throughput, latency, request cost, or throttling | The container shares one host; no measurement here is a managed-service figure. |
 
-## Draft fidelity codes and qualification limits
+## Published fidelity code and qualification limits
 
-The current unpublished Task 2.8 contract accepts one of these two codes.
-[`infra/profiles/object-store-fidelity.yaml`](../../infra/profiles/object-store-fidelity.yaml) is
-the machine-readable form and is what the check reads; the answer enum matches it exactly.
+The Task 2.8 contract accepts `credential_validation_gap`.
+[`infra/profiles/object-store-fidelity.yaml`](../../infra/profiles/object-store-fidelity.yaml)
+is the machine-readable form; its `limitations` keys and the answer enum match.
+The pagination observation is retained under `coverage_gaps` and is not an accepted answer.
 
-The checks reproduce the observations below. Their presence and enum membership do not establish
-release qualification. In particular, the pagination observation is a coverage gap, not a
-demonstrated emulator divergence. Proposed ADR009-R08 requires a qualified divergence list before
-release; that alignment remains unresolved. The draft answer codes and grading logic are unchanged.
+This locally qualified release uses the credential observation only. Codespaces verification
+and additional supported-environment review remain deferred; no environment-parity claim is made.
 
-### `policy_enforcement_gap`
+### `credential_validation_gap`
 
 The supplied check exercises credential acceptance for one signed corpus-listing request. It
 does not configure or test an IAM identity policy or a bucket policy.
@@ -69,11 +68,14 @@ does not configure or test an IAM identity policy or a bucket policy.
 - **AWS behavior.** AWS authenticates signed requests using their signing credentials;
   inventing credentials does not establish an AWS identity. Authentication is distinct from
   the permission to perform an operation. See [AWS SigV4](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html).
+  An unknown access key ID yields `InvalidAccessKeyId` (HTTP 403), not a listing, as documented
+  in [Amazon S3 error responses](https://docs.aws.amazon.com/AmazonS3/latest/developerguide/ErrorResponses.html).
 - **Scope.** This request, bucket/prefix, and emulator configuration only. A pass does not show
   that policies are never enforced, or establish any other S3 operation's behavior.
 
-### `listing_pagination_not_exercised`
+## Ungraded coverage gap: `listing_pagination_not_exercised`
 
+This code was withdrawn from the answer enum and retained as a coverage record.
 The supplied corpus run does not exercise the adapter's continuation path. That identifies a
 limit in the test coverage, not an observed LocalStack/AWS difference.
 
@@ -83,15 +85,16 @@ limit in the test coverage, not an observed LocalStack/AWS difference.
   continuation token for a truncated listing. A smaller listing can finish in one response too.
   See the [AWS API reference](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html).
 - **Qualification limit.** Both services can produce the observed single-page result. The current
-  check therefore does not qualify this code as the divergence required by proposed ADR009-R08.
-  Keep this release issue visible; do not silently replace the answer enum or declare it qualified.
+  check therefore does not qualify this code as the divergence required by ADR009-R08.
+  It is excluded from the answer enum and remains useful as a limit on the evidence.
 
 ## Codes withdrawn from the earlier draft list
 
-Recorded rather than deleted, so the withdrawal is reviewable. Neither is an accepted answer.
+Recorded rather than deleted, so the withdrawal is reviewable. None is an accepted answer.
 
 | Withdrawn | Why |
 |---|---|
+| `policy_enforcement_gap` | Replaced by `credential_validation_gap`: the supplied observation tests credentials, not IAM or bucket-policy enforcement. |
 | `distributed_consistency_difference` | The claim it rested on is false. Amazon S3 has provided strong read-after-write consistency for PUT and DELETE, **including for list operations**, since December 2020. Locally, writing an object and immediately reading and listing it also succeeds, so there is no observed divergence to describe. |
 | `upload_part_handling_divergence` | No code here can reach it. `S3ObjectStore.write` calls `PutObject` with a whole body, and the adapter exposes no create-multipart, upload-part, or complete-multipart path. A check asserts that, so the reason cannot quietly stop being true. |
 

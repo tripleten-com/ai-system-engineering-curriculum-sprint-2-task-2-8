@@ -122,5 +122,6 @@ of the declared separate-store architecture, not a measured property of a Qdrant
 - No preference. Both layouts are legitimate; which one fits depends on volume, team, and
   operational appetite, and this Task grades neither a recommendation nor an opinion.
 - The Qdrant rows describe a documented data model, not an observation of a running cluster.
-- CME independently verifies both profiles and the accepted answers before release. Until then
-  the profile records `qualification.confirmed_by_cme: false`.
+- The source review verifies the supplied profile facts and accepted answers for the local release.
+  Additional CME sign-off remains deferred; `qualification.confirmed_by_cme: false` records that
+  unperformed review honestly. No Qdrant runtime qualification is claimed.

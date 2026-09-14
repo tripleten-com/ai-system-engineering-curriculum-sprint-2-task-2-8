@@ -2,7 +2,7 @@
 
 Attribute one designated retrieval miss to exactly one pipeline stage, rule out one other stage
 with direct evidence, classify the storage layout each supplied engine profile records, and record
-one code from this stack's draft fidelity profile. You change no code.
+one code from this stack's published fidelity profile. You change no code.
 
 One of the two misses you are shown is a defect and the other is the system working correctly.
 Both look the same from the outside, and separating them is the first thing the published rule
@@ -50,7 +50,8 @@ document from the same desk sits in another is **internally inconsistent**. `poe
 that comparison as its `custody` lines, and you can re-derive it from the two fixture files with no
 database at all.
 
-That comparison is what separates the two cases above, and it is the only thing that can.
+Read that comparison alongside the per-stage candidate evidence. Determine which observations
+support a distinction between the cases.
 
 ## The published attribution rule
 
@@ -91,9 +92,8 @@ is the lesson's own common mistake, and the ordering is what prevents it.
 If the evidence answers no to all of them — a readable chunk neither arm found, with no split — the
 rule refuses to attribute and says so. That is a real possible outcome, not a bug.
 
-A note on where a repair would go, since you are not asked to make one: correcting a mislabelled
-tag is a data fix, not a code fix. Nothing in `src/` is wrong in the designated case, which is
-part of why attributing it correctly matters.
+This Task asks for an evidence-supported attribution. Keep the supplied code and fixtures
+unchanged while investigating, and derive your answer from the recorded stage observations.
 
 ## What "ruled out" means
 
@@ -159,19 +159,19 @@ made or assessed.
 emulator, and the profile pins which build, edition, and configuration is running — a limitation
 observed on one configuration is not a limitation of LocalStack in general.
 
-`poe fidelity-observations` checks the profile's local observations. Its invented-credential
-listing check does not test IAM or bucket-policy enforcement. Its single-page listing check
+`poe fidelity-observations` checks the published limitation and the ungraded coverage gap.
+Its invented-credential listing check does not test IAM or bucket-policy enforcement. Its single-page listing check
 records a gap in pagination coverage; AWS can return the same single-page result.
 
-**Release qualification remains unresolved.** The current draft accepts both existing codes,
-but a coverage gap alone does not establish the emulator divergence required by proposed
-ADR009-R08. Check success or enum membership cannot certify that release requirement. Keep the
-draft answer contract unchanged until the qualification issue is reviewed.
+The published answer list contains only `credential_validation_gap`. Pagination is an ungraded
+coverage gap and is excluded from the answer enum. This field checks that you record the supplied
+limitation; it does not test choosing among competing diagnoses. Codespaces qualification is deferred.
 
 The profile also records the codes that were **withdrawn**, with the reason, and those are absent
-from the answer contract entirely — you cannot record one. Read those reasons too: one was
-withdrawn because no code here can reach it, and the other because the claim it rested on was
-untrue of AWS. A divergence nothing here can encounter is not a limitation of your system, and a
+from the answer contract entirely — you cannot record one. Read why the former policy name
+overstated the observation, the multipart claim was unreachable, and the consistency claim was
+untrue of AWS. Pagination is retained separately as a coverage gap. A divergence nothing here
+can encounter is not a limitation of your system, and a
 divergence whose premise is false is not a limitation at all.
 
 ## The held-out evaluation
@@ -196,7 +196,7 @@ environment after the public checks and reports its result for the same submissi
 
 Read this part carefully, because it is easy to assume more than it does.
 
-Task 2.8 is an **answers-only** Task: you change no application code. So the protected job runs
+Task 2.8 is an **answers-only** Task: you change no application code. So the CMS worker runs
 the **supplied** tree, at the base commit, rather than your branch — deliberately, and not as a
 shortcut. The CMS worker holds the private scenario, and nothing candidate-authored executes inside it.
 Checking out your branch would run your `bootstrap.py`, your compose files, and your Poe tasks in
@@ -224,26 +224,25 @@ was wrong.
 | `ruled_out_stage` | one of five stages | the same evidence, through the ruled-out table above |
 | `pgvector_storage_layout` | one of two layouts | `infra/profiles/vector-engines.yaml` |
 | `qdrant_storage_layout` | one of two layouts | the same profile |
-| `fidelity_limitation` | one current draft code; release qualification pending | `infra/profiles/object-store-fidelity.yaml` |
+| `fidelity_limitation` | one published credential-limitation code | `infra/profiles/object-store-fidelity.yaml` |
 
 ## What the checks verify
 
 | Check | What it looks at |
 |---|---|
-| `test_the_designated_query_still_misses_its_target_chunk` | The supplied system: the target is still withheld, still absent from the results, and still withheld *because* its label contradicts its custody record |
+| `test_the_designated_query_still_misses_its_target_chunk` | The supplied system still reproduces the designated miss and preserves its observable stage evidence |
 | `test_attributed_stage_matches_the_stage_evidence` | The recorded stage against the rule applied to live evidence |
 | `test_ruled_out_stage_is_proven_by_the_stage_evidence` | The recorded stage against the set the evidence positively proves |
 | `test_storage_layout_classifications_match_the_supplied_profiles` | Both classifications against `vector-engines.yaml` |
-| `test_recorded_fidelity_limitation_is_a_qualified_code` | The recorded code against the current draft list in `object-store-fidelity.yaml`; this membership check does not certify release qualification |
+| `test_recorded_fidelity_limitation_is_a_qualified_code` | The recorded code against the published list in `object-store-fidelity.yaml`; this membership check does not certify release qualification |
 
 Two supplied modules assess nothing and exist to keep the Task honest.
 `tests/contract/test_object_store_fidelity.py` reproduces each published fidelity observation and
-checks that neither withdrawn code has crept back.
+checks that withdrawn codes and pagination coverage do not enter the answer list.
 `tests/contract/test_authorization_diagnosis.py` (`poe diagnosis-checks`) exercises both cases
-above: it asserts that the designated miss is attributed to the access boundary, that the contrast
-case comes back as no defect, and that exactly one document in the corpus disagrees with its
-custody record — because the designated case is only identifiable while every other document
-agrees with its own. `poe verify` runs both.
+above: it checks that the two cases retain distinct, evidence-supported outcomes and that the
+corpus remains suitable for applying the supplied attribution rule. Inspect the diagnostic
+observations to determine what distinguishes the cases. `poe verify` runs both.
 
 ## Student-editable paths
 
@@ -252,5 +251,5 @@ agrees with its own. `poe verify` runs both.
 
 Everything else is supplied, including the diagnostic, the attribution rule, the profiles, the
 investigation fixture, and the held-out grading procedure. The held-out review grades the supplied
-pipeline, so its CI job refuses to grade a pull request that changed anything outside these two
+pipeline, so its CMS assessment rejects a submission that changed anything outside these two
 surfaces.

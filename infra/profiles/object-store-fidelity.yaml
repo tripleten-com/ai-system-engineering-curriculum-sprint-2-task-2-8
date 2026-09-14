@@ -1,20 +1,22 @@
 # Coldline - Task 2.8
 # File: infra/profiles/object-store-fidelity.yaml
 # Component: Object store emulator fidelity profile
-# Purpose: State draft fidelity classifications and the limits of their evidence.
+# Purpose: State published fidelity classifications and the limits of their evidence.
 # Interacts With: docs/fidelity/ObjectStore.md and the fidelity observation checks
 # Sprint/Task: Sprint 2 - Project 2 / Task 2.8
 # Concepts: Emulator fidelity, observed evidence, bounded claims
 # Tools: YAML
 
-# The current draft source for answers.fidelity_limitation. The answer enum
-# matches these codes, but that is not evidence of release qualification.
+# The published source for answers.fidelity_limitation. The answer enum
+# matches only the limitations keys, not coverage_gaps or withdrawn entries.
+# Membership is not evidence of release qualification.
 # docs/fidelity/ObjectStore.md explains the same evidence limits in prose.
 #
 # The supplied tests check a credential-acceptance observation and a pagination
 # coverage gap. The latter does not establish an emulator/AWS divergence.
-# Preserve the draft codes until their assessment alignment is reviewed; the
-# qualification record below must not describe both as proven divergences.
+# Only the credential observation is an eligible assessment answer. Pagination stays
+# under coverage_gaps and is not an accepted fidelity answer. Additional owner
+# and environment review are deferred under ADR012-R05.
 
 schema_version: 2
 
@@ -45,11 +47,11 @@ emulator:
     - ListObjectsV2
 
 limitations:
-  policy_enforcement_gap:
+  credential_validation_gap:
     applies_here: true
     statement: >-
-      The supplied check expects the corpus bucket's ListObjectsV2 request to
-      succeed when signed with invented access credentials. A pass establishes
+      This configuration returns the corpus bucket's ListObjectsV2 listing
+      when signed with invented access credentials. The observation establishes
       credential acceptance for that request in this configuration. It does not
       establish whether IAM identity policies or bucket policies are enforced.
     local_observation: >-
@@ -60,10 +62,12 @@ limitations:
     aws_behavior: >-
       AWS authenticates a SigV4-signed request using the signing credentials;
       invented credentials do not establish an authenticated AWS identity.
+      An unknown access key ID yields InvalidAccessKeyId (HTTP 403), not a listing.
       ListObjectsV2 for a general purpose bucket requires s3:ListBucket
       permission. Authentication and permission evaluation are distinct checks.
     sources:
       - https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html
+      - https://docs.aws.amazon.com/AmazonS3/latest/developerguide/ErrorResponses.html
       - https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html
     scope: >-
       Limited to the signed ListObjectsV2 request, corpus bucket/prefix, and
@@ -71,7 +75,9 @@ limitations:
       bucket-policy allow/deny case is tested. It implies nothing about other
       S3 operations, durability, consistency, or performance.
 
+coverage_gaps:
   listing_pagination_not_exercised:
+    withdrawn_from_answer_enum: true
     applies_here: true
     statement: >-
       The supplied adapter loops over continuation tokens to page a listing,
@@ -98,6 +104,10 @@ limitations:
 # recorded rather than deleted so the withdrawal is reviewable, and they are
 # absent from the answer enum.
 withdrawn:
+  policy_enforcement_gap:
+    reason: >-
+      Replaced by credential_validation_gap because the observed signed listing
+      tests credential acceptance, not IAM or bucket-policy enforcement.
   distributed_consistency_difference:
     reason: >-
       The claim it rested on is false. Amazon S3 has provided strong
@@ -114,13 +124,16 @@ withdrawn:
       this system. A check asserts the adapter performs no multipart call, so
       this reason cannot quietly stop being true.
 
-# Release gate, per proposed ADR009-R08: code/schema membership alone does not
-# qualify a divergence. The draft answer codes and grading logic are unchanged;
-# their alignment with the required qualified list still needs user review.
+# Local-release decision under ADR012-R06. The answer list contains the
+# credential observation only; membership alone is not evidence of parity.
+# Additional environment and CME verification remain explicitly deferred.
 qualification:
-  status: proposed
+  status: local-release-candidate
+  authority: ADR012-R06
+  approval: source PR approval and merge
+  additional_environment_qualification: deferred
   confirmed_by_cme: false
-  answer_enum_matches_qualified_list: false
+  answer_enum_matches_qualified_list: true
   limitations:
     - The credential test provides no IAM-policy or bucket-policy enforcement evidence.
-    - The pagination code records a coverage gap, not an observed emulator divergence.
+    - Codespaces qualification and additional CME review are deferred under ADR012-R02/R05; no unperformed CME sign-off is asserted.

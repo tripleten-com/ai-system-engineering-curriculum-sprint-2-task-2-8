@@ -243,14 +243,20 @@ def _report(investigation: Investigation, payload: dict[str, object]) -> None:
             print(f"    dropped : {', '.join(str(item) for item in stage['dropped'])}")
     print()
     print(f"  chunks of {facts.document_id}:")
-    for chunk_id, text in chunk_texts(facts.document_id).items():
-        held = sorted(facts.shared_terms & set(text.lower().split()))
+    texts = chunk_texts(facts.document_id)
+    print("    Query terms use normalized title + body tokens, as in the stage summary.")
+    for chunk_id, terms in zip(facts.chunk_ids, facts.terms_per_chunk, strict=True):
+        text = texts[chunk_id]
+        held = sorted(facts.shared_terms & terms)
         print(f"    {chunk_id}  query terms present: {held or '(none)'}")
         print(f"      {text}")
     print()
+    rule = "docs/student/task-2-8-contract.md"
+    if not (TASK_ROOT / rule).is_file():
+        rule = "tests/diagnostics/attribution.py"
     print("Attribute the miss to the one stage this evidence isolates, and rule out a stage")
-    print("this evidence proves operated normally. docs/student/task-2-8-contract.md states the")
-    print("published rule for both.")
+    print(f"this evidence proves operated normally. {rule} states the")
+    print("supplied rule for both; use your current Task contract for the deliverable.")
 
 
 def main() -> int:

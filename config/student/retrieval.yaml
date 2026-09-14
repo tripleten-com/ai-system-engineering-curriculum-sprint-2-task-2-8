@@ -10,7 +10,7 @@
 # Supplied and protected. The Task 2.8/2.9 product composition loads these
 # parameters. Both this file and config/retrieval-baseline.yaml are protected.
 # Capture with `poe benchmark-baseline` and `poe benchmark-experiment`, then
-# read those reports with `poe compare`. The draft policy remains unpublished;
+# read those reports with `poe compare`. The local policy is now published;
 # this checkpoint alone is not evidence of a qualified keep/revert decision.
 #
 # A student's own Task 2.7 experiment stays in that Task's pull request and

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$comment": "Coldline Task 2.8 public answer contract. Five structured decision answers: the pipeline stage one designated retrieval miss is attributed to, one stage the same evidence proves operated normally, the storage layout each supplied vector-engine profile records, and one code from this stack's draft fidelity profile. The two attribution answers are checked against the live stage evidence using the published rule in tests/diagnostics/attribution.py; the three classifications are checked against the supplied profiles under infra/profiles/, never against outside knowledge. Fidelity release qualification remains unresolved; the pagination entry is a coverage gap, not an observed emulator divergence.",
+  "$comment": "Coldline Task 2.8 public answer contract. Five structured decision answers: the pipeline stage one designated retrieval miss is attributed to, one stage the same evidence proves operated normally, the storage layout each supplied vector-engine profile records, and one code from this stack's candidate fidelity profile. The two attribution answers are checked against the live stage evidence using the published rule in tests/diagnostics/attribution.py; the three classifications are checked against the supplied profiles under infra/profiles/, never against outside knowledge. Fidelity release qualification remains unresolved; pagination is an ungraded coverage gap, excluded from the answer enum.",
   "title": "Coldline Task 2.8 answers",
   "description": "One miss attribution and three factual classifications, from supplied evidence.",
   "type": "object",
@@ -56,10 +56,9 @@
           ]
         },
         "fidelity_limitation": {
-          "description": "One code from the current draft fidelity profile at infra/profiles/object-store-fidelity.yaml. The credential-acceptance observation is limited to its tested request; the pagination entry records a test-coverage gap, not an observed LocalStack/AWS divergence. The existing enum is preserved pending release-qualification review.",
+          "description": "One code from the candidate fidelity list in infra/profiles/object-store-fidelity.yaml. It concerns credential validation for the tested signed listing only. Coverage gaps and withdrawn names are not accepted. Release qualification remains pending.",
           "enum": [
-            "policy_enforcement_gap",
-            "listing_pagination_not_exercised"
+            "credential_validation_gap"
           ]
         }
       }

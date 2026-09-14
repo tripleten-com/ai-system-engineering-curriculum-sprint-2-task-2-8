@@ -4,7 +4,7 @@
 
 File:              tests/contract/test_object_store_fidelity.py
 Component:         Contract tests — Object store fidelity observations
-Purpose:           Check draft fidelity observations without overstating their scope.
+Purpose:           Check candidate fidelity observations without overstating their scope.
 Interacts With:    The running LocalStack endpoint and infra/profiles/object-store-fidelity.yaml
 Sprint/Task:       Sprint 2 — Project 2 / Task 2.8
 Concepts:          Emulator fidelity, observed evidence, bounded claims
@@ -14,7 +14,7 @@ Supplied and protected, and not part of the assessed set: nothing here reads a
 submission. A passing credential check concerns one signed listing request;
 it does not test IAM or bucket-policy evaluation. A passing single-page
 listing check records a coverage gap, not an emulator/AWS divergence.
-Draft-code membership and these observations do not certify release qualification.
+Candidate-code membership and these observations do not certify release qualification.
 """
 
 from __future__ import annotations
@@ -80,25 +80,27 @@ def _profile() -> dict[str, Any]:
 
 def test_every_qualified_code_carries_an_observation_and_an_aws_description() -> None:
     """Require evidence descriptions without certifying their qualification."""
-    limitations = _profile()["limitations"]
+    profile = _profile()
+    limitations = profile["limitations"]
     assert limitations, "the profile publishes no limitation at all"
     for code, entry in limitations.items():
         assert entry["applies_here"] is True, (
             f"{code} is published but marked as not applying here; a code that cannot affect "
             "this system belongs under `withdrawn`, with its reason"
         )
+    for code, entry in {**limitations, **profile["coverage_gaps"]}.items():
         for field in ("statement", "local_observation", "aws_behavior", "scope"):
             assert entry.get(field), f"{code} has no {field}"
 
 
 def test_the_local_endpoint_accepts_unrelated_credentials() -> None:
-    """Reproduce the observation behind `policy_enforcement_gap`.
+    """Reproduce the observation behind `credential_validation_gap`.
 
     This tests credential acceptance for one signed listing request. It sets
     no IAM or bucket policy, so its result establishes no policy-enforcement
     behavior for either the local endpoint or a managed account.
     """
-    assert "policy_enforcement_gap" in _profile()["limitations"]
+    assert "credential_validation_gap" in _profile()["limitations"]
     rogue = _client(access_key="not-a-real-key", secret_key="not-a-real-secret")
 
     try:
@@ -106,7 +108,7 @@ def test_the_local_endpoint_accepts_unrelated_credentials() -> None:
     except botocore.exceptions.ClientError as exc:  # pragma: no cover - would falsify the code
         pytest.fail(
             "the local endpoint refused unrelated credentials with "
-            f"{exc.response['Error']['Code']}, so `policy_enforcement_gap` no longer describes "
+            f"{exc.response['Error']['Code']}, so `credential_validation_gap` no longer describes "
             "this configuration and the profile must be re-qualified"
         )
 
@@ -118,7 +120,8 @@ def test_the_local_endpoint_accepts_unrelated_credentials() -> None:
 
 def test_the_listing_never_truncates_so_the_pagination_loop_is_unexercised() -> None:
     """Record a single-page coverage gap, not a pagination divergence."""
-    assert "listing_pagination_not_exercised" in _profile()["limitations"]
+    assert "listing_pagination_not_exercised" in _profile()["coverage_gaps"]
+    assert "listing_pagination_not_exercised" not in _profile()["limitations"]
     client = _client(
         access_key="localstack-development-key", secret_key="localstack-development-secret"
     )

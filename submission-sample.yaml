@@ -61,21 +61,14 @@ answers:
 
   # Task 2.8 — Step 3: Miss attribution and held-out
   # Record LocalStack S3 fidelity limitation and pass held-out evaluation.
-  # Use the draft profile for this pinned version and configuration. Its current
-  # codes remain unchanged while release qualification is reviewed.
+  # Use the published profile for this pinned version and configuration.
   # Source: infra/profiles/object-store-fidelity.yaml; prose: docs/fidelity/ObjectStore.md.
-  # `poe fidelity-observations` reproduces each published observation.
+  # `poe fidelity-observations` reproduces the bounded local observation.
   #
-  # Fidelity options (use exact strings):
-  # - policy_enforcement_gap: Invented credentials accepted for the tested listing;
-  #   no IAM-policy or bucket-policy allow/deny case is exercised.
-  # - listing_pagination_not_exercised: This corpus is small enough that a
-  #   listing never truncates, so the adapter's pagination path never runs
-  #   against the page limit AWS applies. This is a coverage gap, not an
-  #   observed difference from AWS; its release qualification is unresolved.
-  #
-  # The profile also records the codes it WITHDREW, with the reason. They are
-  # absent from the answer contract, so you cannot record one; read why anyway.
-  #
-  # Choose one code from the current draft profile for this stack.
-  fidelity_limitation: "listing_pagination_not_exercised"
+  # Fidelity option (use the exact string):
+  # - credential_validation_gap: Invented credentials accepted for the tested
+  #   signed listing; no IAM-policy or bucket-policy case is exercised.
+  # Pagination is an ungraded coverage gap, not an emulator/AWS divergence.
+  # Withdrawn names are absent from the answer contract. Release qualification
+  # and owner confirmation remain pending.
+  fidelity_limitation: "credential_validation_gap"

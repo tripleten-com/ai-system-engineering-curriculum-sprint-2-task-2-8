@@ -11,6 +11,7 @@ Concepts:          Compatibility, ownership, export safety
 Tools:             Python 3.12, pytest
 """
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -30,11 +31,17 @@ SCHEMA = ROOT / "docs/contracts/submission.schema.json"
 
 STAGES = ("chunking", "embedding", "sparse_matching", "authorization_filtering", "fusion")
 LAYOUTS = ("integrated_relational_table", "dedicated_vector_payload_store")
-LIMITATIONS = ("policy_enforcement_gap", "listing_pagination_not_exercised")
-# Codes the profile withdrew. They are absent from the answer contract, so the
+LIMITATIONS = ("credential_validation_gap",)
+# Codes withdrawn from the answer enum, including the retained coverage gap.
+# They are absent from the answer contract, so the
 # public verifier must reject them outright rather than leave them to a runtime
 # check: a student cannot record a divergence the Task no longer publishes.
-WITHDRAWN = ("distributed_consistency_difference", "upload_part_handling_divergence")
+WITHDRAWN = (
+    "distributed_consistency_difference",
+    "upload_part_handling_divergence",
+    "policy_enforcement_gap",
+    "listing_pagination_not_exercised",
+)
 
 
 def valid_answers(**overrides: Any) -> dict[str, object]:
@@ -44,7 +51,7 @@ def valid_answers(**overrides: Any) -> dict[str, object]:
         "ruled_out_stage": "sparse_matching",
         "pgvector_storage_layout": "integrated_relational_table",
         "qdrant_storage_layout": "dedicated_vector_payload_store",
-        "fidelity_limitation": "policy_enforcement_gap",
+        "fidelity_limitation": "credential_validation_gap",
     }
     answers.update(overrides)
     return {"answers": answers}
@@ -78,7 +85,7 @@ def test_every_stage_is_well_formed(tmp_path: Path, stage: str) -> None:
 
 @pytest.mark.parametrize("limitation", LIMITATIONS)
 def test_every_published_limitation_is_well_formed(tmp_path: Path, limitation: str) -> None:
-    """Both qualified codes are well-formed; only the profile says which one is recorded."""
+    """The candidate code is well-formed; qualification is a separate release gate."""
     root = _task_root(tmp_path, yaml.safe_dump(valid_answers(fidelity_limitation=limitation)))
 
     validate_submission(root / "submission.yaml", SCHEMA)
@@ -91,6 +98,17 @@ def test_a_withdrawn_limitation_is_rejected(tmp_path: Path, limitation: str) -> 
 
     with pytest.raises(SubmissionError, match="fidelity_limitation"):
         validate_submission(root / "submission.yaml", SCHEMA)
+
+
+def test_fidelity_enum_matches_only_the_candidate_limitation_list() -> None:
+    """Keep coverage gaps and retired names out of the public answer contract."""
+    schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+    profile = yaml.safe_load(
+        (ROOT / "infra/profiles/object-store-fidelity.yaml").read_text(encoding="utf-8")
+    )
+    allowed = schema["properties"]["answers"]["properties"]["fidelity_limitation"]["enum"]
+    assert allowed == list(profile["limitations"])
+    assert not set(allowed) & (set(profile["withdrawn"]) | set(profile["coverage_gaps"]))
 
 
 @pytest.mark.parametrize("layout", LAYOUTS)

@@ -2,7 +2,7 @@
 
 Attribute one designated retrieval miss to exactly one pipeline stage, rule out one other stage
 with direct evidence, classify the storage layout each supplied engine profile records, and record
-one code from this stack's draft fidelity profile. You change no code.
+one code from this stack's published fidelity profile. You change no code.
 
 One of the two misses you are shown is a defect and the other is the system working correctly.
 Both look the same from the outside, and separating them is the first thing the published rule
@@ -159,19 +159,19 @@ made or assessed.
 emulator, and the profile pins which build, edition, and configuration is running — a limitation
 observed on one configuration is not a limitation of LocalStack in general.
 
-`poe fidelity-observations` checks the profile's local observations. Its invented-credential
-listing check does not test IAM or bucket-policy enforcement. Its single-page listing check
+`poe fidelity-observations` checks the published limitation and the ungraded coverage gap.
+Its invented-credential listing check does not test IAM or bucket-policy enforcement. Its single-page listing check
 records a gap in pagination coverage; AWS can return the same single-page result.
 
-**Release qualification remains unresolved.** The current draft accepts both existing codes,
-but a coverage gap alone does not establish the emulator divergence required by proposed
-ADR009-R08. Check success or enum membership cannot certify that release requirement. Keep the
-draft answer contract unchanged until the qualification issue is reviewed.
+The published answer list contains only `credential_validation_gap`. Pagination is an ungraded
+coverage gap and is excluded from the answer enum. This field checks that you record the supplied
+limitation; it does not test choosing among competing diagnoses. Codespaces qualification is deferred.
 
 The profile also records the codes that were **withdrawn**, with the reason, and those are absent
-from the answer contract entirely — you cannot record one. Read those reasons too: one was
-withdrawn because no code here can reach it, and the other because the claim it rested on was
-untrue of AWS. A divergence nothing here can encounter is not a limitation of your system, and a
+from the answer contract entirely — you cannot record one. Read why the former policy name
+overstated the observation, the multipart claim was unreachable, and the consistency claim was
+untrue of AWS. Pagination is retained separately as a coverage gap. A divergence nothing here
+can encounter is not a limitation of your system, and a
 divergence whose premise is false is not a limitation at all.
 
 ## The held-out evaluation
@@ -224,7 +224,7 @@ was wrong.
 | `ruled_out_stage` | one of five stages | the same evidence, through the ruled-out table above |
 | `pgvector_storage_layout` | one of two layouts | `infra/profiles/vector-engines.yaml` |
 | `qdrant_storage_layout` | one of two layouts | the same profile |
-| `fidelity_limitation` | one current draft code; release qualification pending | `infra/profiles/object-store-fidelity.yaml` |
+| `fidelity_limitation` | one published credential-limitation code | `infra/profiles/object-store-fidelity.yaml` |
 
 ## What the checks verify
 
@@ -234,11 +234,11 @@ was wrong.
 | `test_attributed_stage_matches_the_stage_evidence` | The recorded stage against the rule applied to live evidence |
 | `test_ruled_out_stage_is_proven_by_the_stage_evidence` | The recorded stage against the set the evidence positively proves |
 | `test_storage_layout_classifications_match_the_supplied_profiles` | Both classifications against `vector-engines.yaml` |
-| `test_recorded_fidelity_limitation_is_a_qualified_code` | The recorded code against the current draft list in `object-store-fidelity.yaml`; this membership check does not certify release qualification |
+| `test_recorded_fidelity_limitation_is_a_qualified_code` | The recorded code against the published list in `object-store-fidelity.yaml`; this membership check does not certify release qualification |
 
 Two supplied modules assess nothing and exist to keep the Task honest.
 `tests/contract/test_object_store_fidelity.py` reproduces each published fidelity observation and
-checks that neither withdrawn code has crept back.
+checks that withdrawn codes and pagination coverage do not enter the answer list.
 `tests/contract/test_authorization_diagnosis.py` (`poe diagnosis-checks`) exercises both cases
 above: it checks that the two cases retain distinct, evidence-supported outcomes and that the
 corpus remains suitable for applying the supplied attribution rule. Inspect the diagnostic

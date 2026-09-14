@@ -187,12 +187,10 @@ def test_storage_layout_classifications_match_the_supplied_profiles(
 
 
 def test_recorded_fidelity_limitation_is_a_qualified_code() -> None:
-    """Match the current draft code list without certifying release qualification.
+    """Match the candidate code list without certifying release qualification.
 
-    The profile distinguishes the credential observation from the pagination
-    coverage gap. This membership check cannot establish that either entry is
-    a release-qualified emulator divergence. The draft assessment remains
-    unchanged pending review of the profile's qualification limitations.
+    Pagination is recorded under coverage_gaps and is not an accepted answer.
+    Membership in limitations cannot establish release qualification.
     """
     profile = _profile_document()
     limitations = profile["limitations"]
@@ -205,5 +203,5 @@ def test_recorded_fidelity_limitation_is_a_qualified_code() -> None:
     )
     assert limitations[answer]["applies_here"], (
         f"answers.fidelity_limitation records {answer!r}, which the supplied profile does not "
-        f"publish as applying here. The qualified codes are {sorted(limitations)}."
+        f"publish as applying here. The candidate codes are {sorted(limitations)}."
     )
